@@ -1,92 +1,90 @@
-use std::fmt;
+/*
+    Copyright 2021, Andrew C. Young <andrew@vaelen.org>
 
-const MEMORY_SIZE: usize = 0xFFFF;
+    This file is part of the v6502 library.
 
-struct CPU {
-    pc: u16,
-    a: u8,
-    x: u8,
-    y: u8,
-    sr: u8,
-    sp: u8,
-    memory: [u8;MEMORY_SIZE]
-}
+    The v6502 library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-impl CPU {
-    pub fn new() -> CPU {
-        CPU {
-            pc: 0xFFFE,
-            a: 0,
-            x: 0,
-            y: 0,
-            sr: 0,
-            sp: 0,
-            memory: [0; MEMORY_SIZE],
-        }
-    }
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    pub fn reset(&mut self) {
-        for i in 0..MEMORY_SIZE {
-            self.memory[i] = 0;
-        }
-        self.pc = 0xFFFE;
-        self.a = 0;
-        self.x = 0;
-        self.y = 0;
-        self.sr = 0;
-        self.sp = 0;
-    }
+    You should have received a copy of the GNU General Public License
+    along with the v6502 library.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
-    pub fn zero_page(&self) -> &[u8] {
-        &self.memory[0x0000..0x0100]
-    }
+#[cfg(test)]
+mod tests;
 
-    pub fn stack(&self) -> &[u8] {
-        &self.memory[0x0100..0x0200]
-    }
+pub mod addressing;
+pub mod instruction;
+pub mod opcodes;
+pub mod cpu;
 
-    fn fmt_memory(data: &[u8], offset: u16, fmt: &mut fmt::Formatter) -> fmt::Result {
-        const CHUNK_SIZE: usize = 16;
-        let mut row = offset;
-        fmt.write_str("       ")?;
-        for i in 0..CHUNK_SIZE {
-            fmt.write_fmt(format_args!("{:2X} ", i))?;
-        }
-        fmt.write_str("\n")?;
-        for chunk in data.chunks(CHUNK_SIZE) {
-            fmt.write_fmt(format_args!("{:04X} : ", row))?;
-            for b in chunk {
-                fmt.write_fmt(format_args!("{:02X} ", b))?;
+use crate::cpu::Cpu;
+
+use std::io::BufReader;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+
+/***** main *****/
+
+fn load_hex(cpu: &mut Cpu, filename: &str) {
+    // Create a path to the desired file
+    let path = Path::new(filename);
+    let display = path.display();
+
+    // Open the path in read-only mode, returns `io::Result<File>`
+    let file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, why),
+        Ok(file) => file,
+    };
+
+    let buffered = BufReader::new(file);
+    for result in buffered.lines() {
+        match result {
+            Err(why) => panic!("couldn't read from {}: {}", display, why),
+            Ok(line) => {
+                let parts: Vec<&str> = line.split(":").collect();
+                let offset = parts[0];
+                let mut pos = match u16::from_str_radix(offset, 16) {
+                    Err(why) => panic!("invalid offset {} in {}: {}", offset, display, why),
+                    Ok(pos) => pos,
+                };
+                for h in parts[1].split(" ") {
+                    let hex = h.trim();
+                    if !hex.is_empty() {
+                        let byte = match u8::from_str_radix(hex, 16) {
+                            Err(why) => panic!("invalid hex value {} in {}: {}", hex, display, why),
+                            Ok(byte) => byte,
+                        };
+                        cpu.set(pos, byte);
+                        pos += 1;
+                    }
+                }
             }
-            fmt.write_str("\n")?;
-            row += CHUNK_SIZE as u16;
         }
-        Ok(())
-    }
-
-}
-
-impl fmt::Debug for CPU {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("Registers:")
-            .field("A", &format_args!("{:02X}", self.a))
-            .field("X", &format_args!("{:02X}", self.x))
-            .field("Y", &format_args!("{:02X}", self.y))
-            .field("PC", &format_args!("{:04X}", self.pc))
-            .field("SR", &format_args!("{:02X}", self.sr))
-            .field("SP", &format_args!("{:02X}", self.sp))
-            .finish()?;
-        fmt.write_str("\n")?;
-        fmt.write_str("\nZero Page:\n")?;
-        CPU::fmt_memory(self.zero_page(), 0x0000, fmt)?;
-        fmt.write_str("\nStack:\n")?;
-        CPU::fmt_memory(self.stack(), 0x0100, fmt)
     }
 }
 
 fn main() {
-    println!("Initializing...");
-    let mut cpu = CPU::new();
+    eprint!("Initializing...");
+    let mut cpu = Cpu::new6502();
+    eprintln!("Done");
+    eprint!("Loading Program...");
+    load_hex(&mut cpu, "test.hex");
     cpu.reset();
-    println!("{:?}", cpu);
+    eprintln!("Done");
+    eprintln!("Initial PC: {:04X}", cpu.pc);
+    eprint!("Running...");
+    cpu.run();
+    eprintln!("Done");
+    eprintln!("");
+    eprintln!("{:?}", cpu);
+    println!("{:X}", cpu);
 }
