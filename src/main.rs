@@ -31,6 +31,7 @@ use std::io::BufReader;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::time::Instant;
 
 /***** main *****/
 
@@ -82,9 +83,18 @@ fn main() {
     eprintln!("Done");
     eprintln!("Initial PC: {:04X}", cpu.pc);
     eprint!("Running...");
+    let start_time = Instant::now();
     cpu.run();
+    let runtime = start_time.elapsed();
     eprintln!("Done");
+    if runtime.as_secs() > 0 {
+        eprintln!("Runtime: {} s", runtime.as_secs_f32());
+    } else if runtime.as_millis() > 0 {
+        eprintln!("Runtime: {} ms", runtime.as_millis());
+    } else {
+        eprintln!("Runtime: {} μs", runtime.as_micros());
+    }
     eprintln!("");
     eprintln!("{:?}", cpu);
-    println!("{:X}", cpu);
+    //println!("{:X}", cpu);
 }
