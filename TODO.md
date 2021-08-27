@@ -1,7 +1,6 @@
 # TODO List
 
 - Implement BCD Math
-- Double check bitwise operations
 - Double check Break and ignored SR bit behavior for PHP, PLP, BRK, and RTI
 
   Note: The break flag is not an actual flag implemented in a register, and rather
