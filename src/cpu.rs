@@ -21,10 +21,13 @@ use std::fmt;
 
 use crate::addressing::Addressing;
 use crate::addressing::Addressing::*;
+use crate::device::Device;
+use crate::device::Rand;
 use crate::instruction::Instruction;
 use crate::instruction::InstructionType;
 use crate::instruction::InstructionType::*;
 use crate::opcodes::*;
+use crate::memory::Memory;
 
 const MEMORY_SIZE: usize = 0x10000;
 const IRQ_VECTOR: u16 = 0xFFFE;
@@ -41,6 +44,20 @@ pub struct Cpu {
     pub sp: u8,
     pub memory: [u8;MEMORY_SIZE],
     pub opcodes: [Instruction; 256],
+    pub rand: Rand,
+}
+
+impl Memory for Cpu {
+    fn get(&mut self, addr: u16) -> u8 {
+        match addr {
+            0x00FFu16 => self.rand.get(addr),
+            _ => self.memory[addr as usize],
+        }
+    }
+
+    fn set(&mut self, addr: u16, v: u8) {
+        self.memory[addr as usize] = v;
+    }
 }
 
 impl Cpu {
@@ -58,6 +75,7 @@ impl Cpu {
             sp: 0xFF,
             memory: [0; MEMORY_SIZE],
             opcodes: [BRK; 256],
+            rand: Rand::new(),
         };
         cpu.load_opcodes(opcodes);
         cpu.reset();
@@ -212,14 +230,6 @@ impl Cpu {
         self.sp = self.sp.overflowing_add(1).0;
         let v = self.get(0x0100 + self.sp as u16);
         return v;
-    }
-
-    pub fn get(&self, addr: u16) -> u8 {
-        self.memory[addr as usize]
-    }
-
-    pub fn set(&mut self, addr: u16, v: u8) {
-        self.memory[addr as usize] = v;
     }
 
     pub fn update_nz(&mut self, v: u8) {

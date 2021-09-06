@@ -24,8 +24,11 @@ pub mod addressing;
 pub mod instruction;
 pub mod opcodes;
 pub mod cpu;
+pub mod device;
+pub mod memory;
 
 use crate::cpu::Cpu;
+use crate::memory::Memory;
 
 use std::io::BufReader;
 use std::fs::File;

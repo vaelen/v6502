@@ -21,6 +21,7 @@ use crate::cpu::Cpu;
 use crate::addressing::Addressing::*;
 use crate::instruction::Instruction;
 use crate::instruction::InstructionType::*;
+use crate::memory::Memory;
 
 #[test]
 fn status_bits() {
@@ -65,20 +66,20 @@ fn addressing() {
     cpu.set(0x81, 0x45);
     cpu.set(0x82, 0x46);
 
-    assert_eq!(Accumulator.address(&cpu), None);
-    assert_eq!(Absolute(0x8080).address(&cpu), Some(0x8080));
-    assert_eq!(AbsoluteX(0x8080).address(&cpu), Some(0x8081));
-    assert_eq!(AbsoluteY(0x8080).address(&cpu), Some(0x8082));
-    assert_eq!(Immediate(0x80).address(&cpu), None);
-    assert_eq!(Implied.address(&cpu), None);
-    assert_eq!(Indirect(0x8080).address(&cpu), Some(0x11FE));
-    assert_eq!(IndirectX(0x80).address(&cpu), Some(0x4645));
-    assert_eq!(IndirectY(0x80).address(&cpu), Some(0x4545));
-    assert_eq!(Relative(16).address(&cpu), Some(0x0010));
-    assert_eq!(Relative(-16).address(&cpu), Some(0xFFF0));
-    assert_eq!(ZeroPage(0x80).address(&cpu), Some(0x0080));
-    assert_eq!(ZeroPageX(0x80).address(&cpu), Some(0x0081));
-    assert_eq!(ZeroPageY(0x80).address(&cpu), Some(0x0082));
+    assert_eq!(Accumulator.address(&mut cpu), None);
+    assert_eq!(Absolute(0x8080).address(&mut cpu), Some(0x8080));
+    assert_eq!(AbsoluteX(0x8080).address(&mut cpu), Some(0x8081));
+    assert_eq!(AbsoluteY(0x8080).address(&mut cpu), Some(0x8082));
+    assert_eq!(Immediate(0x80).address(&mut cpu), None);
+    assert_eq!(Implied.address(&mut cpu), None);
+    assert_eq!(Indirect(0x8080).address(&mut cpu), Some(0x11FE));
+    assert_eq!(IndirectX(0x80).address(&mut cpu), Some(0x4645));
+    assert_eq!(IndirectY(0x80).address(&mut cpu), Some(0x4545));
+    assert_eq!(Relative(16).address(&mut cpu), Some(0x0010));
+    assert_eq!(Relative(-16).address(&mut cpu), Some(0xFFF0));
+    assert_eq!(ZeroPage(0x80).address(&mut cpu), Some(0x0080));
+    assert_eq!(ZeroPageX(0x80).address(&mut cpu), Some(0x0081));
+    assert_eq!(ZeroPageY(0x80).address(&mut cpu), Some(0x0082));
 }
 
 #[test]
@@ -515,13 +516,13 @@ fn opcodes() {
     let i = cpu.next_instruction();
     assert_eq!(i.t, Lda, "LDA ZP Instruction");
     assert_eq!(i.a, ZeroPage(0xFF), "LDA ZP Address Type");
-    assert_eq!(i.a.address(&cpu), Some(0x00FFu16), "LDA ZP Address Value");
+    assert_eq!(i.a.address(&mut cpu), Some(0x00FFu16), "LDA ZP Address Value");
     assert_eq!(cpu.pc, 0x0003, "LDA ZP Moves PC by 2");
 
     let i = cpu.next_instruction();
     assert_eq!(i.t, Lda, "LDA Absolute Instruction");
     assert_eq!(i.a, Absolute(0x2010), "LDA Absolute Address Type");
-    assert_eq!(i.a.address(&cpu), Some(0x2010u16), "LDA Absolute Address Value");
+    assert_eq!(i.a.address(&mut cpu), Some(0x2010u16), "LDA Absolute Address Value");
     assert_eq!(cpu.pc, 0x0006, "LDA Absolute Moves PC by 3");
 }
 

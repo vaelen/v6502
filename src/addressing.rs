@@ -17,7 +17,7 @@
     along with the v6502 library.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::cpu::Cpu;
+use crate::{cpu::Cpu, memory::Memory};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Addressing {
@@ -37,8 +37,9 @@ pub enum Addressing {
 }
 
 impl Addressing {
-    pub fn address(&self, cpu: &Cpu) -> Option<u16> {
-        let indirect = |addr: u16| -> u16 {
+    pub fn address(&self, cpu: &mut Cpu) -> Option<u16> {
+        let x = cpu.x;
+        let mut indirect = |addr: u16| -> u16 {
             let low_byte = cpu.get(addr) as u16;
             let high_byte = cpu.get(addr.overflowing_add(1).0) as u16;
             (high_byte << 8) | low_byte
@@ -51,7 +52,7 @@ impl Addressing {
             Addressing::Immediate(_) => None,
             Addressing::Implied => None,
             Addressing::Indirect(addr) => Some(indirect(*addr)),
-            Addressing::IndirectX(addr) => Some(indirect((*addr).overflowing_add(cpu.x).0 as u16)),
+            Addressing::IndirectX(addr) => Some(indirect((*addr).overflowing_add(x).0 as u16)),
             Addressing::IndirectY(addr) => Some(indirect(*addr as u16).overflowing_add(cpu.x as u16).0),
             Addressing::Relative(offset) => {
                 let o = *offset;
