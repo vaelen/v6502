@@ -19,26 +19,15 @@
 
 use std::time::Instant;
 
-use clap::{AppSettings, Clap};
-
 use v6502::cpu::Cpu;
 use v6502::util::load_hex;
 
-#[derive(Clap)]
-#[clap(version = "1.0", author = "Andrew C. Young <andrew@vaelen.org>")]
-#[clap(setting = AppSettings::ColoredHelp)]
-struct Opts {
-    #[clap(short, long, default_value = "program.hex")]
-    program: String,
-}
-
 fn main() {
-    let opts: Opts = Opts::parse();
     eprint!("Initializing...");
     let mut cpu = Cpu::new6502();
     eprintln!("Done");
     eprint!("Loading Program...");
-    load_hex(&mut cpu, &opts.program);
+    load_hex(&mut cpu, "program.hex");
     cpu.reset();
     eprintln!("Done");
     eprintln!("Initial PC: {:04X}", cpu.pc);
@@ -56,5 +45,6 @@ fn main() {
     }
     eprintln!("");
     eprintln!("{:?}", cpu);
+    // print entire memory as hex
     //println!("{:X}", cpu);
 }

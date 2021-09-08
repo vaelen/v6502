@@ -23,6 +23,7 @@ use crate::addressing::Addressing;
 use crate::addressing::Addressing::*;
 use crate::device::Device;
 use crate::device::Rand;
+use crate::device::Terminal;
 use crate::instruction::Instruction;
 use crate::instruction::InstructionType;
 use crate::instruction::InstructionType::*;
@@ -45,18 +46,27 @@ pub struct Cpu {
     pub memory: [u8;MEMORY_SIZE],
     pub opcodes: [Instruction; 256],
     pub rand: Rand,
+    pub terminal: Terminal,
 }
 
 impl Memory for Cpu {
     fn get(&mut self, addr: u16) -> u8 {
         match addr {
-            0x00FFu16 => self.rand.get(addr),
+            0x00FDu16 => self.terminal.get(0),
+            0x00FEu16 => self.terminal.get(1),
+            0x00FFu16 => self.rand.get(0),
             _ => self.memory[addr as usize],
         }
     }
 
     fn set(&mut self, addr: u16, v: u8) {
-        self.memory[addr as usize] = v;
+        match addr {
+            0x00FDu16 => self.terminal.set(0, v),
+            0x00FEu16 => self.terminal.set(1, v),
+            0x00FFu16 => self.rand.set(0, v),
+            _ => self.memory[addr as usize] = v,
+        }
+        
     }
 }
 
@@ -76,6 +86,7 @@ impl Cpu {
             memory: [0; MEMORY_SIZE],
             opcodes: [BRK; 256],
             rand: Rand::new(),
+            terminal: Terminal::new(),
         };
         cpu.load_opcodes(opcodes);
         cpu.reset();

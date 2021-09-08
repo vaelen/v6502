@@ -1,9 +1,7 @@
 [package]
-name = "v6502-cli"
+name = "v6502"
 version = "0.1.0"
 authors = ["Andrew Young <andrewy@indeed.com>"]
 edition = "2018"
 
 [dependencies]
-v6502 = { path = "v6502" }
-clap = "3.0.0-beta.4"

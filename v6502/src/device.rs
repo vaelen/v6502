@@ -17,14 +17,63 @@
     along with the v6502 library.  If not, see <https://www.gnu.org/licenses/>.
  */
 
- use std::time::{SystemTime, UNIX_EPOCH};
-
+use std::{io::{self, Read, Write}, time::{SystemTime, UNIX_EPOCH}};
+ 
 use crate::memory::Memory;
  
  pub trait Device<T=Self>: Memory {
     fn new() -> T;
     fn name() -> String;
     fn status() -> String;
+}
+
+pub struct Terminal {
+    last_bytes_read: usize,
+    pub input: Box<dyn Read>,
+    pub output: Box<dyn Write>,
+}
+
+impl Memory for Terminal {
+    fn get(&mut self, address: u16) -> u8 {
+        let mut buf = [0];
+        match address {
+            0 => {
+                self.last_bytes_read = self.input.read(&mut buf).unwrap();
+                if self.last_bytes_read == 0 {
+                    0
+                } else {
+                    buf[0]
+                }
+            },
+            1 => self.last_bytes_read as u8,
+            _ => 0,
+        }
+    }
+
+    fn set(&mut self, address: u16, value: u8) {
+        match address {
+            0 => self.output.write(&[value]).unwrap(),
+            _ => 0,
+        };
+    }
+}
+
+impl Device for Terminal{
+    fn new() -> Self {
+        Terminal { 
+            last_bytes_read: 0,
+            input: Box::new(io::stdin()),
+            output: Box::new(io::stdout()),
+        }
+    }
+
+    fn name() -> String {
+        format!("Terminal")
+    }
+
+    fn status() -> String {
+        format!("Normal")
+    }
 }
 
 pub struct Rand {
